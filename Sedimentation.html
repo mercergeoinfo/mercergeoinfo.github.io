@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+	<!-- The <head> </head> section contains meta-data needed for the page-->
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Sedimentation</title>
+		<!-- The following <style> </style> contains css code, setting the styling, including size and colour of various "elements" in the co-called DOM (the html bit) -->
+		<style>
+			body {
+				font-family: sans-serif;
+				justify-content: center;
+				background-color: black;
+				color: white;
+				display: grid;
+				grid-template-rows: 90vh 1vh;
+				grid-template-columns: 1fr;
+				grid-template-areas: "display" "controls";
+			}
+			#viewer {
+				grid-area: display;
+				height: 650px;
+			}
+			.control {
+				margin-left: 5px;
+			}
+			#controls {
+				grid-area: controls;
+				display: flex;
+				justify-content: center;
+				align-items: top;
+				font-size: 10px;
+				
+			}
+			#attrib {
+				font-size: 12px;
+				margin-left: 10px;
+			}
+			<!-- This is the setting for the size of the svg element. This is the area that displays the model-->
+			svg {
+				height: 650px;
+				width: 1500px;
+			}
+			input {
+				width: 100px;
+			}
+
+		</style>
+	</head>
+	<!-- The <body> </body> contains the basic descriptions and contents of the elements that will be displayed on the page-->
+	<body>
+			<!-- This is the svg, the graphical element that displays the model. This is updated and filled by the Javascript found and the bottom of the <body>-->
+			<svg id = "viewer" viewBox=" 0 0 200 100">
+				<g id="mainView" class="mainBox" stroke="#ffffff" stroke-width="0.0" fill="#003366" fill-rule="nonzero">
+					<rect id="waterBody" class="water" x="0" y="0" rx="1" ry="1" width="200" height="100" />
+				</g>
+			</svg>
+			<div id='controls'>
+
+				<div class="control">
+				<input id="particleSizeSet" type="range" min="1" max="10" value="1" step="1">
+					<p>Size: <output id="partSize"></output></p>
+					<p>Number: <output id="partNumber"></output></p>
+				</div>
+				<div class="control">
+				<input id="miSecSet" type="range" min="1" max="1000" value="10" step="1">
+					<p>Milliseconds: <output id="showMilli"></output></p>
+				</div>
+				<div class="control">
+				<input id="moundSet" type="range" min="0" max="50" value="5" step="1">
+					<p>Percentage as mounds: <output id="showMound"></output></p>
+				</div>
+				<div class="control">
+				<button id='startStop' type="button" onclick="setState()">Start</button>
+				</div>
+				<div>
+				<p id="attrib"><b>By Andrew Mercer</b></p>
+				</div>
+			</div>
+			
+			
+		<!-- This is the Javascript code that controls the model and other functions in the body of the page.-->
+		<script>
+			// Firstly, declare and set variable needed through the script
+			// These first variables point to elements of the webpage. They are selected using their id. This is indicated by the # symbol
+			const mainView = document.querySelector('#mainView')
+			const plotArea = document.querySelector('#waterBody')
+			const particleSetting = document.querySelector('#particleSizeSet')
+			const milliSecSetting = document.querySelector('#miSecSet')
+			const moundSetting = document.querySelector('#moundSet')
+			const dispPartSize = document.querySelector('#partSize')
+			const dispPartNumber = document.querySelector('#partNumber')
+			const dispMilli = document.querySelector('#showMilli')
+			const dispMound = document.querySelector('#showMound')
+			
+			// Now attributes of a webpage element (here the svg rectangle) can be used to set new variables 
+			const plotWidth = plotArea.getAttribute('width')
+			const plotHeight = plotArea.getAttribute('height')
+			
+			// The following are not set by the user
+			let newParticleNumber = 1
+			let moveParticle = null
+			let startStopState = false
+			let hasRun = false
+			/////////////////console.log('0-hasRun: ' + hasRun)
+			const pixelArray = []
+			
+			// The following are set by or dependent on user settings
+			// Particle size
+			let particleSize = particleSetting.value*1
+			dispPartSize.textContent = particleSize
+			let pixelOffset = particleSize/2
+			let columns = Math.floor(plotWidth / particleSize)
+			let rows = Math.floor(plotHeight / particleSize)
+			let numberOfPixels = Math.floor(columns * rows)
+			let numberOfParticles = Math.floor(columns * rows / 2)
+			dispPartNumber.textContent = numberOfParticles
+			particleSetting.addEventListener("input", (event) => {
+				dispPartSize.textContent = event.target.value
+				particleSize = event.target.value*1
+				pixelOffset = particleSize/2
+				columns = Math.floor(plotWidth / particleSize)
+				rows = Math.floor(plotHeight / particleSize)
+				numberOfPixels = Math.floor(columns * rows)
+				numberOfParticles = Math.floor(columns * rows / 2)
+				dispPartNumber.textContent = numberOfParticles
+			})
+			// Time step between each run of runCycle() 
+			let timeStep = milliSecSetting.value*1
+			dispMilli.textContent = timeStep
+			milliSecSetting.addEventListener("input", (event) => {
+				dispMilli.textContent = event.target.value
+				timeStep = event.target.value*1
+			})
+			// Size, as percentage of particles, for mounds
+			let moundSize = moundSetting.value*0.01
+			dispMound.textContent = moundSize
+			moundSetting.addEventListener("input", (event) => {
+				dispMound.textContent = event.target.value
+				moundSize = event.target.value*0.01
+			})
+			// Run the model. Pause and reset not implemented yet
+			function setState () {
+				if (startStopState == false){
+					while (startStopState == false) {
+						for (let i = 0; i < rows; i++) {
+							pixelArray[i] = []
+							for (let j = 0; j < columns; j++) {
+								pixelArray[i][j] = null
+							}
+						}
+						console.log('0-startStopState: ' + startStopState)					
+						startStopState = runCycle()
+						console.log('1-startStopState: ' + startStopState)
+					}
+				} else if (startStopState == true) {
+					console.log('2-startStopState: ' + startStopState)
+					window.location.href=window.location.href
+				}
+			}
+			/* This function controls the model */	
+			function runCycle() {
+				document.querySelector('#startStop').innerHTML = 'Running'
+				const currentState = pixelArray.map(function(arr) {
+					return arr.slice()
+				})
+				sedimentParticles()
+				if (newParticleNumber <= numberOfParticles) {
+					createParticle(newParticleNumber)
+					newParticleNumber += 1
+				}
+				if (compare2dArrays(currentState, pixelArray) == false) {
+					setTimeout(runCycle,timeStep)
+				} else {
+					document.querySelector('#startStop').innerHTML = 'Ended'
+					console.log('Return')
+					return true
+				}
+			}
+			// Some functions used as tools
+			function compareArrays (a, b) {
+				if (a.length === b.length && a.every((element, index) => element === b[index])) {
+					return true
+				} else {
+					return false
+				}
+			}
+
+			function compare2dArrays (a, b) {
+				if (a.length === b.length && Array.isArray(a) && Array.isArray(b)) {
+					for (let aRow = 0; aRow < a.length; ++aRow) {
+						for (let aCol = 0; aCol < a[0].length; ++aCol) {
+							if (a[aRow][aCol] != b[aRow][aCol]) {
+								return false
+							}
+						}
+					}
+					return true
+				}
+			}
+			// This is called by runCycle() to create new particles, number set by rows*columns/2 previously 
+			function createParticle(i) {
+				let colNr
+				// Check if current particle is part of mound
+				if (i < numberOfParticles*moundSize) {
+					if (Math.random() < 0.5) {
+						let leftMin = 0.2
+						let leftMax = 0.3
+						colNr = Math.floor((Math.random() * (leftMax - leftMin) + leftMin) * columns)
+					} else {
+						let rightMin = 0.7
+						let rightMax = 0.8
+						colNr = Math.floor((Math.random() * (rightMax - rightMin) + rightMin) * columns)
+					}
+				} else {
+					colNr = Math.floor(Math.random() * columns)
+				}
+				let xCoord = colNr * particleSize + pixelOffset;
+				let yCoord = pixelOffset
+				// Create a new svg DOM element of type circle
+				const particle = document.createElementNS("http://www.w3.org/2000/svg",'circle')
+				particle.setAttribute('class', 'particle')
+				const id = 'particle_' + i
+				particle.setAttribute('id', id)
+				particle.setAttribute('cx', xCoord)
+				particle.setAttribute('cy', yCoord)
+				particle.setAttribute('r', particleSize / 2)
+				particle.setAttribute('stroke', 'rgb(0,0,0)')
+				particle.setAttribute('stroke-width', '0.0')
+				fillcolours = ['rgb(227,26,28)','rgb(253,191,111)','rgb(251,154,153)','rgb(151,160,44)', 'rgb(178,223,138)', 'rgb(31,120,180)']
+				let fill = fillcolours[5]
+				if (i < numberOfParticles * moundSize) {
+					fill = fillcolours[0]
+				} else if (i < numberOfParticles * 0.2) {
+					fill = fillcolours[1]
+				} else if (i < numberOfParticles * 0.4) {
+					fill = fillcolours[2]
+				} else if (i < numberOfParticles * 0.6) {
+					fill = fillcolours[3]
+				} else if (i < numberOfParticles * 0.8) {
+					fill = fillcolours[4]
+				} else {fillcolours[5]}
+				particle.setAttribute('fill', fill)
+				pixelArray[0][colNr] = i
+				mainView.appendChild(particle)
+			}
+			/* Move the particles down the screen. ids taken from main page svg and stored as 2d vector. 
+			Function scans from bottom, "pulling" particles down rather than pushing down.
+			Moves from left to right, therefore moves to left must be treated differently to moves to the right 
+			Skip bottom row, particles can't move any more
+			Scans from ll to ur, in figure below X is current location
+				a X b       a = [i][j-1]     X = [i][j]     b = [i][j+1]
+				c d e       c = [i+1][j-1]   d = [i+1][j]   e = [i+1][j+1] 
+			*/
+			function sedimentParticles() {
+				for (i = rows - 2 ; i > -1; i--) {
+					for (j = 0; j < columns; j++) {
+						if (pixelArray[i][j] != null) {
+							const IDnumber = pixelArray[i][j]
+							const particleID = '#particle_' + IDnumber
+							const currentParticle = document.querySelector(particleID)
+							const currentX = currentParticle.getAttribute('cx')*1
+							const currentY = currentParticle.getAttribute('cy')*1
+							if (pixelArray[i+1][j] === null) { // d empty
+								currentParticle.setAttribute('cy', currentY + particleSize)
+								pixelArray[i][j] = null
+								pixelArray[i+1][j] = IDnumber
+							} else if ((pixelArray[i+1][j+1] != null) && (pixelArray[i+1][j-1] === null)) { // e not empty, c empty
+								currentParticle.setAttribute('cy', currentY + particleSize)
+								currentParticle.setAttribute('cx', currentX - particleSize)
+								pixelArray[i][j] = null
+								pixelArray[i+1][j-1] = IDnumber
+							} else if ((pixelArray[i+1][j+1] == null) && (pixelArray[i][j+1] != null) && (pixelArray[i+1][j-1] === null) ) { // e empty, b not empty, c empty
+								currentParticle.setAttribute('cy', currentY + particleSize)
+								currentParticle.setAttribute('cx', currentX - particleSize)
+								pixelArray[i][j] = null
+								pixelArray[i+1][j-1] = IDnumber
+							} else if ((pixelArray[i+1][j+1] === null) && (pixelArray[i][j+1] == null) && (pixelArray[i+1][j-1] != null) ) { // e empty, b empty, c not empty
+								currentParticle.setAttribute('cy', currentY + particleSize)
+								currentParticle.setAttribute('cx', currentX + particleSize)
+								pixelArray[i][j] = null
+								pixelArray[i+1][j+1] = IDnumber
+							} else if ((pixelArray[i+1][j+1] == null) && (pixelArray[i][j+1] == null) && (pixelArray[i+1][j-1] == null) ) { // e empty, b empty, c empty
+								let cORe
+								if (j==0) {
+									cORe = 1
+								} else if (j==columns-1) {
+									cORe = -1
+								} else {
+									let randNumb = Math.random()
+									if (randNumb < 0.5) {
+									cORe = -1
+									} else {cORe = 1}
+								}
+								currentParticle.setAttribute('cy', currentY + particleSize)
+								currentParticle.setAttribute('cx', currentX + (particleSize*cORe))
+								pixelArray[i][j] = null
+								pixelArray[i+1][j+cORe] = IDnumber
+							}
+						}
+					}
+				}
+			}
+
+		</script>
+	</body>
+</html>
