@@ -1,65 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-	<!-- The <head> </head> section contains meta-data needed for the page-->
 	<head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Sedimentation</title>
-		<!-- The following <style> </style> contains css code, setting the styling, including size and colour of various "elements" in the co-called DOM (the html bit) -->
 		<style>
 			body {
 				font-family: sans-serif;
 				justify-content: center;
 				background-color: black;
 				color: white;
-				display: grid;
-				gap: 1.5rem;
-				/* grid-template-rows: 85vh 5vh; */
-				grid-template-columns: 1fr;
-				/* grid-template-areas: "display" "controls"; */
+				display: flex;
+				flex-wrap: wrap;
 			}
-			#viewer {
-				/* grid-area: display; */
-				/* height: 487.5px; */
-				height: min(90%, 487.5px) ;
+			.view {
+			    flex: 1 1 90%;
 			}
 			.control {
+			    flex: 1 1 10%;
 				margin-left: 5px;
 			}
-			#controls {
-				/* grid-area: controls; */
+			.controls {
 				display: flex;
 				justify-content: center;
-				/* align-items: top; */
 				font-size: 10px;
-				
+			}
+			input {
+				width: 100px;
 			}
 			#attrib {
 				font-size: 12px;
 				margin-left: 10px;
 			}
-			<!-- This is the setting for the size of the svg element. This is the area that displays the model -->
-			svg {
+			svg { /* This is the setting for the size of the svg element, the is the area that displays the model */
 				height: 650px;
 				width: 1500px;
 			}
-			input {
-				width: 100px;
-			}
-
 		</style>
 	</head>
-	<!-- The <body> </body> contains the basic descriptions and contents of the elements that will be displayed on the page-->
 	<body>
-	        <div>
+        <div class="model">
 			<!-- This is the svg, the graphical element that displays the model. This is updated and filled by the Javascript found and the bottom of the <body>-->
-                <svg id = "viewer" viewBox=" 0 0 200 100">
+                <svg id="modelView" viewBox=" 0 0 200 100">
                     <g id="mainView" class="mainBox" stroke="#ffffff" stroke-width="0.0" fill="#003366" fill-rule="nonzero">
                         <rect id="waterBody" class="water" x="0" y="0" rx="1" ry="1" width="200" height="100" />
                     </g>
                 </svg>
             <div>
-			<div id='controls'>
+			<div class='controls'>
 				<div class="control">
 				<input id="particleSizeSet" type="range" min="1" max="10" value="1" step="1">
 					<p>Size: <output id="partSize"></output></p>
